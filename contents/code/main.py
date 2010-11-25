@@ -5,9 +5,13 @@ from PyKDE4.plasma import Plasma
 from PyKDE4 import plasmascript
 
 import dbus
+import urllib
+import urllib2
+import simplejson
 
 CLEMENTINE_PATH = "/TrackList"
 CLEMNTINE_IFACE = "org.mpris.clementine"
+LAST_FM_KEY = "83dcb2276022c922b0140f4fde7425ec"
 
 class Clementine(plasmascript.Applet):
     def __init__(self, parent, args=None):
@@ -45,6 +49,11 @@ class Clementine(plasmascript.Applet):
         self.label_title.setAlignment(Qt.AlignCenter)
         self.layout.addItem(self.label_title)
 
+        # cover image
+        self.cover = Plasma.Label(self.applet)
+        self.cover.setAlignment(Qt.AlignCenter)
+        self.layout.addItem(self.cover)
+
         self.clementine_iface = self.get_dbus_object()
         self.current_track = self.clementine_iface.GetCurrentTrack()
         self.metadata = dict(self.clementine_iface.GetMetadata(self.current_track))
@@ -56,9 +65,29 @@ class Clementine(plasmascript.Applet):
         self.label_time.setText(str(self.track.time))
         self.label_title.setText(self.track.title)
 
+        self.cover.setImage(self.get_artwork())
+
     def get_dbus_object(self):
         self.bus = dbus.SessionBus()
         return  self.bus.get_object(CLEMNTINE_IFACE, CLEMENTINE_PATH)
+
+    def get_artwork(self):
+        url = "http://ws.audioscrobbler.com/2.0/"
+        params = { 
+                'format': 'json',
+                'method': 'album.getinfo',
+                'api_key': LAST_FM_KEY,
+                'album' : self.track.album,
+                'artist': self.track.artist,
+        }
+        full_url = url + "?" + urllib.urlencode(params)
+        print full_url
+        resp = urllib2.urlopen(full_url)
+        data = resp.read()
+        parsed = simplejson.loads(data)
+        large_url = parsed['album']['image'][2]['#text']
+        filename, headers = urllib.urlretrieve(large_url)
+        return filename
 
 class Track(object):
 
