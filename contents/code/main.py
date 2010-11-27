@@ -41,8 +41,8 @@ class Clementine(plasmascript.Applet):
             self.player_iface.Play()
         else:
             self.play.setText("Pause")
-            self.player_iface.Pause()
             self.play.setIcon(KIcon("media-playback-pause"))
+            self.player_iface.Pause()
 
     def _next_clicked(self):
         self.player_iface.Next()
@@ -51,9 +51,16 @@ class Clementine(plasmascript.Applet):
         self.player_iface.Prev()
 
     def _stop_clicked(self):
-        self.player.Stop()
+        self.player_iface.Stop()
 
     def init(self):
+
+        self.clementine_iface = self.get_tracklist_object()
+        self.player_iface = self.get_player_object()
+        self.clementine_iface.connect_to_signal("TrackChange", 
+                                                self._handle_track_change, 
+                                                MEDIAPLAYER_IFACE)
+
         self.setAspectRatioMode(Plasma.IgnoreAspectRatio)
         self.resize(200, 200)
         self.setHasConfigurationInterface(False)
@@ -120,11 +127,6 @@ class Clementine(plasmascript.Applet):
         QObject.connect(self.stop, SIGNAL("clicked()"), self._stop_clicked)
         self.layout.addItem(self.stop)
 
-        self.clementine_iface = self.get_tracklist_object()
-        self.player_iface = self.get_player_object()
-        self.clementine_iface.connect_to_signal("TrackChange", 
-                                                self._handle_track_change, 
-                                                MEDIAPLAYER_IFACE)
         self.refresh()
 
     def refresh(self):
