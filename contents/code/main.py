@@ -62,12 +62,14 @@ class Clementine(plasmascript.Applet):
         self.layout.addItem(self.label_title)
 
         # cover image
-        self.cover = Plasma.Label(self.applet)
-        self.cover.setAlignment(Qt.AlignCenter)
+        self.cover = Plasma.Frame(self.applet)
+        self.cover.setMinimumSize(174, 174)
         self.layout.addItem(self.cover)
 
         self.clementine_iface = self.get_dbus_object()
-        self.clementine_iface.connect_to_signal("TrackChange", self._handle_track_change, MEDIAPLAYER_IFACE)
+        self.clementine_iface.connect_to_signal("TrackChange", 
+                                                self._handle_track_change, 
+                                                MEDIAPLAYER_IFACE)
         self.refresh()
 
     def refresh(self):
