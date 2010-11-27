@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from PyKDE4.kdeui import *
 from PyKDE4.plasma import Plasma
 from PyKDE4 import plasmascript
 
@@ -13,6 +14,7 @@ import gobject
 import dbus.mainloop.glib
 
 CLEMENTINE_PATH = "/TrackList"
+PLAYER_PATH = "/Player"
 CLEMENTINE_IFACE = "org.mpris.clementine"
 MEDIAPLAYER_IFACE = "org.freedesktop.MediaPlayer"
 LAST_FM_KEY = "83dcb2276022c922b0140f4fde7425ec"
@@ -29,9 +31,31 @@ class Clementine(plasmascript.Applet):
     def _handle_track_change(self, data):
         self.refresh()
 
+    def _get_is_paused(self):
+        return self.player_iface.GetStatus()[0]
+
+    def _play_clicked(self):
+        if self._get_is_paused():
+            self.play.setText("Play")
+            self.play.setIcon(KIcon("media-playback-start"))
+            self.player_iface.Play()
+        else:
+            self.play.setText("Pause")
+            self.player_iface.Pause()
+            self.play.setIcon(KIcon("media-playback-pause"))
+
+    def _next_clicked(self):
+        self.player_iface.Next()
+
+    def _prev_clicked(self):
+        self.player_iface.Prev()
+
+    def _stop_clicked(self):
+        self.player.Stop()
+
     def init(self):
         self.setAspectRatioMode(Plasma.IgnoreAspectRatio)
-        self.resize(200, 150)
+        self.resize(200, 200)
         self.setHasConfigurationInterface(False)
         self.layout = QGraphicsLinearLayout(Qt.Vertical, self.applet)
         self.setLayout(self.layout)
@@ -66,7 +90,38 @@ class Clementine(plasmascript.Applet):
         self.cover.setMinimumSize(174, 174)
         self.layout.addItem(self.cover)
 
-        self.clementine_iface = self.get_dbus_object()
+        # play/pause button
+        self.play = Plasma.PushButton(self.applet)
+        if self._get_is_paused():
+            self.play.setText("Play")
+            self.play.setIcon(KIcon("media-playback-start"))
+        else:
+            self.play.setText("Pause")
+            self.play.setIcon(KIcon("media-playback-pause"))
+        QObject.connect(self.play, SIGNAL("clicked()"), self._play_clicked)
+        self.layout.addItem(self.play)
+
+        # next/pause buttons
+        self.next = Plasma.PushButton(self.applet)
+        self.prev = Plasma.PushButton(self.applet)
+        self.next.setText("Next")
+        self.prev.setText("Previous")
+        self.next.setIcon(KIcon("media-skip-forward"))
+        self.prev.setIcon(KIcon("media-skip-backward"))
+        QObject.connect(self.next, SIGNAL("clicked()"), self._next_clicked)
+        QObject.connect(self.prev, SIGNAL("clicked()"), self._prev_clicked)
+        self.layout.addItem(self.next)
+        self.layout.addItem(self.prev)
+
+        # stop button
+        self.stop = Plasma.PushButton(self.applet)
+        self.stop.setText("Stop")
+        self.stop.setIcon(KIcon("media-playback-stop"))
+        QObject.connect(self.stop, SIGNAL("clicked()"), self._stop_clicked)
+        self.layout.addItem(self.stop)
+
+        self.clementine_iface = self.get_tracklist_object()
+        self.player_iface = self.get_player_object()
         self.clementine_iface.connect_to_signal("TrackChange", 
                                                 self._handle_track_change, 
                                                 MEDIAPLAYER_IFACE)
@@ -85,9 +140,13 @@ class Clementine(plasmascript.Applet):
 
         self.cover.setImage(self.get_artwork())
 
-    def get_dbus_object(self):
+    def get_tracklist_object(self):
         self.bus = dbus.SessionBus()
         return  self.bus.get_object(CLEMENTINE_IFACE, CLEMENTINE_PATH)
+
+    def get_player_object(self):
+        self.bus = dbus.SessionBus()
+        return  self.bus.get_object(CLEMENTINE_IFACE, PLAYER_PATH)
 
     def get_artwork(self):
         """
