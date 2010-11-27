@@ -4,19 +4,30 @@ from PyQt4.QtGui import *
 from PyKDE4.plasma import Plasma
 from PyKDE4 import plasmascript
 
+import os
 import dbus
 import urllib
 import urllib2
 import simplejson
+import gobject
+import dbus.mainloop.glib
 
 CLEMENTINE_PATH = "/TrackList"
-CLEMNTINE_IFACE = "org.mpris.clementine"
+CLEMENTINE_IFACE = "org.mpris.clementine"
+MEDIAPLAYER_IFACE = "org.freedesktop.MediaPlayer"
 LAST_FM_KEY = "83dcb2276022c922b0140f4fde7425ec"
+IMG_CACHE_DIR = "~/.config/Clementine/albumcovers/"
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
 
 class Clementine(plasmascript.Applet):
 
     def __init__(self, parent, args=None):
          plasmascript.Applet.__init__(self, parent)
+
+    def _handle_track_change(self, data):
+        self.refresh()
 
     def init(self):
         self.setAspectRatioMode(Plasma.IgnoreAspectRatio)
@@ -56,9 +67,10 @@ class Clementine(plasmascript.Applet):
         self.layout.addItem(self.cover)
 
         self.clementine_iface = self.get_dbus_object()
+        self.clementine_iface.connect_to_signal("TrackChange", self._handle_track_change, MEDIAPLAYER_IFACE)
         self.refresh()
 
-    def refresh():
+    def refresh(self):
         self.current_track = self.clementine_iface.GetCurrentTrack()
         self.metadata = dict(self.clementine_iface.GetMetadata(self.current_track))
         self.track = Track(**self.metadata)
@@ -73,24 +85,38 @@ class Clementine(plasmascript.Applet):
 
     def get_dbus_object(self):
         self.bus = dbus.SessionBus()
-        return  self.bus.get_object(CLEMNTINE_IFACE, CLEMENTINE_PATH)
+        return  self.bus.get_object(CLEMENTINE_IFACE, CLEMENTINE_PATH)
 
     def get_artwork(self):
-        url = "http://ws.audioscrobbler.com/2.0/"
-        params = { 
-                'format': 'json',
-                'method': 'album.getinfo',
-                'api_key': LAST_FM_KEY,
-                'album' : self.track.album,
-                'artist': self.track.artist,
-        }
-        full_url = url + "?" + urllib.urlencode(params)
-        resp = urllib2.urlopen(full_url)
-        data = resp.read()
-        parsed = simplejson.loads(data)
-        large_url = parsed['album']['image'][2]['#text']
-        filename, headers = urllib.urlretrieve(large_url)
-        return filename
+        """
+            Check if clementine already has the coverart.
+            Plays nice with clementine's default directory.
+        """
+        try:
+            hash = QtCore.QCryptographicHash(QtCore.QCryptographicHash.Sha1) 
+            hash.addData(self.track.artist.lower())
+            hash.addData(self.track.album.lower())
+            filename = IMG_CACHE_DIR + str(hash.result()).encode('hex')
+            if os.path.isfile(filename):
+                return filename
+            url = "http://ws.audioscrobbler.com/2.0/"
+            params = { 
+                    'format': 'json',
+                    'method': 'album.getinfo',
+                    'api_key': LAST_FM_KEY,
+                    'album' : self.track.album,
+                    'artist': self.track.artist,
+            }
+            full_url = url + "?" + urllib.urlencode(params)
+            resp = urllib2.urlopen(full_url)
+            data = resp.read()
+            parsed = simplejson.loads(data)
+            large_url = parsed['album']['image'][2]['#text']
+            downloaded, headers = urllib.urlretrieve(large_url, filename)
+        except:
+            filename = '/usr/share/kde4/apps/amarok/images/nocover.png'
+        finally:
+            return filename
 
 class Track(object):
 
