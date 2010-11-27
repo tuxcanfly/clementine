@@ -16,7 +16,7 @@ CLEMENTINE_PATH = "/TrackList"
 CLEMENTINE_IFACE = "org.mpris.clementine"
 MEDIAPLAYER_IFACE = "org.freedesktop.MediaPlayer"
 LAST_FM_KEY = "83dcb2276022c922b0140f4fde7425ec"
-IMG_CACHE_DIR = "~/.config/Clementine/albumcovers/"
+IMG_CACHE_DIR = os.path.expanduser("~/.config/Clementine/albumcovers/")
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
@@ -92,31 +92,31 @@ class Clementine(plasmascript.Applet):
             Hashes album data to check if clementine has the coverart.
             If no, downloads it and saves to clementine's directory.
         """
-        try:
-            hash = QtCore.QCryptographicHash(QtCore.QCryptographicHash.Sha1) 
-            hash.addData(self.track.artist.lower())
-            hash.addData(self.track.album.lower())
-            filename = IMG_CACHE_DIR + str(hash.result()).encode('hex')
-            if os.path.isfile(filename):
-                return filename
-            url = "http://ws.audioscrobbler.com/2.0/"
-            params = { 
-                    'format': 'json',
-                    'method': 'album.getinfo',
-                    'api_key': LAST_FM_KEY,
-                    'album' : self.track.album,
-                    'artist': self.track.artist,
-            }
-            full_url = url + "?" + urllib.urlencode(params)
-            resp = urllib2.urlopen(full_url)
-            data = resp.read()
-            parsed = simplejson.loads(data)
-            large_url = parsed['album']['image'][2]['#text']
-            downloaded, headers = urllib.urlretrieve(large_url, filename)
-        except:
-            filename = '/usr/share/kde4/apps/amarok/images/nocover.png'
-        finally:
+        #try:
+        hash = QCryptographicHash(QCryptographicHash.Sha1) 
+        hash.addData(self.track.artist.lower())
+        hash.addData(self.track.album.lower())
+        filename = IMG_CACHE_DIR + str(hash.result()).encode('hex') + '.jpg'
+        if os.path.isfile(filename):
             return filename
+        url = "http://ws.audioscrobbler.com/2.0/"
+        params = { 
+                'format': 'json',
+                'method': 'album.getinfo',
+                'api_key': LAST_FM_KEY,
+                'album' : self.track.album,
+                'artist': self.track.artist,
+        }
+        full_url = url + "?" + urllib.urlencode(params)
+        resp = urllib2.urlopen(full_url)
+        data = resp.read()
+        parsed = simplejson.loads(data)
+        large_url = parsed['album']['image'][2]['#text']
+        downloaded, headers = urllib.urlretrieve(large_url, filename)
+        #except:
+            #filename = '/usr/share/kde4/apps/amarok/images/nocover.png'
+        #finally:
+        return filename
 
 class Track(object):
 
