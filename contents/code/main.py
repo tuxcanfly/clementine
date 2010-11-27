@@ -67,6 +67,11 @@ class Clementine(plasmascript.Applet):
         self.layout = QGraphicsLinearLayout(Qt.Vertical, self.applet)
         self.setLayout(self.layout)
 
+        # title label
+        self.label_title = Plasma.Label(self.applet)
+        self.label_title.setAlignment(Qt.AlignCenter)
+        self.layout.addItem(self.label_title)
+
         # album label
         self.label_album = Plasma.Label(self.applet)
         self.label_album.setAlignment(Qt.AlignCenter)
@@ -76,21 +81,6 @@ class Clementine(plasmascript.Applet):
         self.label_artist = Plasma.Label(self.applet)
         self.label_artist.setAlignment(Qt.AlignCenter)
         self.layout.addItem(self.label_artist)
-
-        # location label
-        self.label_location = Plasma.Label(self.applet)
-        self.label_location.setAlignment(Qt.AlignCenter)
-        self.layout.addItem(self.label_location)
-
-        # time label
-        self.label_time = Plasma.Label(self.applet)
-        self.label_time.setAlignment(Qt.AlignCenter)
-        self.layout.addItem(self.label_time)
-
-        # title label
-        self.label_title = Plasma.Label(self.applet)
-        self.label_title.setAlignment(Qt.AlignCenter)
-        self.layout.addItem(self.label_title)
 
         # cover image
         self.cover = Plasma.Frame(self.applet)
@@ -136,9 +126,7 @@ class Clementine(plasmascript.Applet):
 
         self.label_album.setText(self.track.album)
         self.label_artist.setText(self.track.artist)
-        self.label_location.setText(self.track.location)
-        self.label_time.setText(str(self.track.time))
-        self.label_title.setText(self.track.title)
+        self.label_title.setText("<b style='font-size:18px;'>"+self.track.title+"</b>")
 
         self.cover.setImage(self.get_artwork())
 
