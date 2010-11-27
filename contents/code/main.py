@@ -14,6 +14,7 @@ CLEMNTINE_IFACE = "org.mpris.clementine"
 LAST_FM_KEY = "83dcb2276022c922b0140f4fde7425ec"
 
 class Clementine(plasmascript.Applet):
+
     def __init__(self, parent, args=None):
          plasmascript.Applet.__init__(self, parent)
 
@@ -55,6 +56,9 @@ class Clementine(plasmascript.Applet):
         self.layout.addItem(self.cover)
 
         self.clementine_iface = self.get_dbus_object()
+        self.refresh()
+
+    def refresh():
         self.current_track = self.clementine_iface.GetCurrentTrack()
         self.metadata = dict(self.clementine_iface.GetMetadata(self.current_track))
         self.track = Track(**self.metadata)
@@ -81,7 +85,6 @@ class Clementine(plasmascript.Applet):
                 'artist': self.track.artist,
         }
         full_url = url + "?" + urllib.urlencode(params)
-        print full_url
         resp = urllib2.urlopen(full_url)
         data = resp.read()
         parsed = simplejson.loads(data)
@@ -91,8 +94,8 @@ class Clementine(plasmascript.Applet):
 
 class Track(object):
 
-    def __init__(self, album=None, artist=None, location=None, 
-            time=0, title=None, tracknumber=-1):
+    def __init__(self, album="", artist="", location="", 
+            time=0, title="", tracknumber=-1):
         self.album = album
         self.artist = artist
         self.location = location
