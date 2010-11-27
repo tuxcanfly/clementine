@@ -89,8 +89,8 @@ class Clementine(plasmascript.Applet):
 
     def get_artwork(self):
         """
-            Check if clementine already has the coverart.
-            Plays nice with clementine's default directory.
+            Hashes album data to check if clementine has the coverart.
+            If no, downloads it and saves to clementine's directory.
         """
         try:
             hash = QtCore.QCryptographicHash(QtCore.QCryptographicHash.Sha1) 
