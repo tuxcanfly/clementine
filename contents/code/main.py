@@ -54,6 +54,8 @@ class Clementine(plasmascript.Applet):
         self.player_iface.Stop()
 
     def _retry_clicked(self):
+        self.message.deleteLater()
+        self.retry.deleteLater()
         self.init()
 
     def init(self):
