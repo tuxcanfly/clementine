@@ -53,19 +53,41 @@ class Clementine(plasmascript.Applet):
     def _stop_clicked(self):
         self.player_iface.Stop()
 
-    def init(self):
+    def _retry_clicked(self):
+        self.init()
 
-        self.clementine_iface = self.get_tracklist_object()
-        self.player_iface = self.get_player_object()
-        self.clementine_iface.connect_to_signal("TrackChange", 
-                                                self._handle_track_change, 
-                                                MEDIAPLAYER_IFACE)
+    def init(self):
 
         self.setAspectRatioMode(Plasma.IgnoreAspectRatio)
         self.resize(200, 200)
         self.setHasConfigurationInterface(False)
         self.layout = QGraphicsLinearLayout(Qt.Vertical, self.applet)
         self.setLayout(self.layout)
+
+        self.clementine_iface = self.get_tracklist_object()
+        self.player_iface = self.get_player_object()
+
+        if self.clementine_iface is None:
+
+            # not running message
+            self.message = Plasma.Label(self.applet)
+            self.message.setAlignment(Qt.AlignCenter)
+            self.message.setText("Clementine is not running")
+            self.layout.addItem(self.message)
+
+            # retry button
+            self.retry = Plasma.PushButton(self.applet)
+            self.retry.setText("Refresh")
+            self.retry.setIcon(KIcon('view-refresh'))
+            QObject.connect(self.retry, SIGNAL("clicked()"), self._retry_clicked)
+            self.layout.addItem(self.retry)
+
+            # no clementine running; no plasma app for you
+            return
+
+        self.clementine_iface.connect_to_signal("TrackChange", 
+                                                self._handle_track_change, 
+                                                MEDIAPLAYER_IFACE)
 
         # title label
         self.label_title = Plasma.Label(self.applet)
@@ -132,11 +154,17 @@ class Clementine(plasmascript.Applet):
 
     def get_tracklist_object(self):
         self.bus = dbus.SessionBus()
-        return  self.bus.get_object(CLEMENTINE_IFACE, CLEMENTINE_PATH)
+        try:
+            return  self.bus.get_object(CLEMENTINE_IFACE, CLEMENTINE_PATH)
+        except dbus.exceptions.DBusException:
+            return None
 
     def get_player_object(self):
         self.bus = dbus.SessionBus()
-        return  self.bus.get_object(CLEMENTINE_IFACE, PLAYER_PATH)
+        try:
+            return  self.bus.get_object(CLEMENTINE_IFACE, PLAYER_PATH)
+        except dbus.exceptions.DBusException:
+            return None
 
     def get_artwork(self):
         """
