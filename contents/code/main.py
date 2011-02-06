@@ -66,8 +66,10 @@ class Clementine(plasmascript.Applet):
         self.layout = QGraphicsLinearLayout(Qt.Vertical, self.applet)
         self.setLayout(self.layout)
 
+        self.bus = dbus.SessionBus()
         self.tracklist_proxy = self.get_tracklist_object()
         self.player_proxy = self.get_player_object()
+        self.player_iface = self.get_player_iface()
 
         if self.tracklist_proxy is None:
 
@@ -87,9 +89,8 @@ class Clementine(plasmascript.Applet):
             # no clementine running; no plasma app for you
             return
 
-        self.tracklist_proxy.connect_to_signal("TrackChange",
-                                                self._handle_track_change,
-                                                MEDIAPLAYER)
+        self.player_iface.connect_to_signal("TrackChange",
+                                                self._handle_track_change)
 
         # title label
         self.label_title = Plasma.Label(self.applet)
@@ -161,18 +162,19 @@ class Clementine(plasmascript.Applet):
         self.cover.setImage(self.get_artwork())
 
     def get_tracklist_object(self):
-        self.bus = dbus.SessionBus()
         try:
             return  self.bus.get_object(CLEMENTINE, TRACKLIST_PATH)
         except dbus.exceptions.DBusException:
             return None
 
     def get_player_object(self):
-        self.bus = dbus.SessionBus()
         try:
             return  self.bus.get_object(CLEMENTINE, PLAYER_PATH)
         except dbus.exceptions.DBusException:
             return None
+
+    def get_player_iface(self):
+        return dbus.Interface(self.player_proxy, MEDIAPLAYER)
 
     def get_artwork(self):
         """
