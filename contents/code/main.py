@@ -13,10 +13,10 @@ import simplejson
 import gobject
 import dbus.mainloop.glib
 
-CLEMENTINE_PATH = "/TrackList"
+TRACKLIST_PATH = "/TrackList"
 PLAYER_PATH = "/Player"
-CLEMENTINE_IFACE = "org.mpris.clementine"
-MEDIAPLAYER_IFACE = "org.freedesktop.MediaPlayer"
+CLEMENTINE = "org.mpris.clementine"
+MEDIAPLAYER = "org.freedesktop.MediaPlayer"
 LAST_FM_KEY = "83dcb2276022c922b0140f4fde7425ec"
 IMG_CACHE_DIR = os.path.expanduser("~/.config/Clementine/albumcovers/")
 
@@ -32,26 +32,26 @@ class Clementine(plasmascript.Applet):
         self.refresh()
 
     def _get_is_paused(self):
-        return self.player_iface.GetStatus()[0]
+        return self.player_proxy.GetStatus()[0]
 
     def _play_clicked(self):
         if self._get_is_paused():
             self.play.setText("Play")
             self.play.setIcon(KIcon("media-playback-start"))
-            self.player_iface.Play()
+            self.player_proxy.Play()
         else:
             self.play.setText("Pause")
             self.play.setIcon(KIcon("media-playback-pause"))
-            self.player_iface.Pause()
+            self.player_proxy.Pause()
 
     def _next_clicked(self):
-        self.player_iface.Next()
+        self.player_proxy.Next()
 
     def _prev_clicked(self):
-        self.player_iface.Prev()
+        self.player_proxy.Prev()
 
     def _stop_clicked(self):
-        self.player_iface.Stop()
+        self.player_proxy.Stop()
 
     def _retry_clicked(self):
         self.message.deleteLater()
@@ -66,10 +66,10 @@ class Clementine(plasmascript.Applet):
         self.layout = QGraphicsLinearLayout(Qt.Vertical, self.applet)
         self.setLayout(self.layout)
 
-        self.clementine_iface = self.get_tracklist_object()
-        self.player_iface = self.get_player_object()
+        self.tracklist_proxy = self.get_tracklist_object()
+        self.player_proxy = self.get_player_object()
 
-        if self.clementine_iface is None:
+        if self.tracklist_proxy is None:
 
             # not running message
             self.message = Plasma.Label(self.applet)
@@ -87,9 +87,9 @@ class Clementine(plasmascript.Applet):
             # no clementine running; no plasma app for you
             return
 
-        self.clementine_iface.connect_to_signal("TrackChange", 
-                                                self._handle_track_change, 
-                                                MEDIAPLAYER_IFACE)
+        self.tracklist_proxy.connect_to_signal("TrackChange",
+                                                self._handle_track_change,
+                                                MEDIAPLAYER)
 
         # title label
         self.label_title = Plasma.Label(self.applet)
@@ -100,7 +100,7 @@ class Clementine(plasmascript.Applet):
         self.label_album = Plasma.Label(self.applet)
         self.label_album.setAlignment(Qt.AlignCenter)
         self.layout.addItem(self.label_album)
-        
+
         # artist label
         self.label_artist = Plasma.Label(self.applet)
         self.label_artist.setAlignment(Qt.AlignCenter)
@@ -144,8 +144,8 @@ class Clementine(plasmascript.Applet):
         self.refresh()
 
     def refresh(self):
-        self.current_track = self.clementine_iface.GetCurrentTrack()
-        self.metadata = dict(self.clementine_iface.GetMetadata(self.current_track))
+        self.current_track = self.tracklist_proxy.GetCurrentTrack()
+        self.metadata = dict(self.tracklist_proxy.GetMetadata(self.current_track))
         self.track = Track(
                             self.metadata.get('album', ''),
                             self.metadata.get('artist', ''),
@@ -163,14 +163,14 @@ class Clementine(plasmascript.Applet):
     def get_tracklist_object(self):
         self.bus = dbus.SessionBus()
         try:
-            return  self.bus.get_object(CLEMENTINE_IFACE, CLEMENTINE_PATH)
+            return  self.bus.get_object(CLEMENTINE, TRACKLIST_PATH)
         except dbus.exceptions.DBusException:
             return None
 
     def get_player_object(self):
         self.bus = dbus.SessionBus()
         try:
-            return  self.bus.get_object(CLEMENTINE_IFACE, PLAYER_PATH)
+            return  self.bus.get_object(CLEMENTINE, PLAYER_PATH)
         except dbus.exceptions.DBusException:
             return None
 
@@ -180,14 +180,14 @@ class Clementine(plasmascript.Applet):
             If no, downloads it and saves to clementine's directory.
         """
         try:
-            hash = QCryptographicHash(QCryptographicHash.Sha1) 
+            hash = QCryptographicHash(QCryptographicHash.Sha1)
             hash.addData(self.track.artist.lower())
             hash.addData(self.track.album.lower())
             filename = IMG_CACHE_DIR + str(hash.result()).encode('hex') + '.jpg'
             if os.path.isfile(filename):
                 return filename
             url = "http://ws.audioscrobbler.com/2.0/"
-            params = { 
+            params = {
                     'format': 'json',
                     'method': 'album.getinfo',
                     'api_key': LAST_FM_KEY,
@@ -207,7 +207,7 @@ class Clementine(plasmascript.Applet):
 
 class Track(object):
 
-    def __init__(self, album="", artist="", location="", 
+    def __init__(self, album="", artist="", location="",
             time=0, title="", tracknumber=-1):
         self.album = album
         self.artist = artist
