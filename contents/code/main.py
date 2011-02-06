@@ -147,11 +147,11 @@ class Clementine(plasmascript.Applet):
         self.current_track = self.clementine_iface.GetCurrentTrack()
         self.metadata = dict(self.clementine_iface.GetMetadata(self.current_track))
         self.track = Track(
-                            self.metadata.get('album'),
-                            self.metadata.get('artist'),
-                            self.metadata.get('location'),
-                            self.metadata.get('time'),
-                            self.metadata.get('title'),
+                            self.metadata.get('album', ''),
+                            self.metadata.get('artist', ''),
+                            self.metadata.get('location', ''),
+                            self.metadata.get('time', 0),
+                            self.metadata.get('title', ''),
                             self.metadata.get('tracknumber', 0),
                           )
         self.label_album.setText(self.track.album)
