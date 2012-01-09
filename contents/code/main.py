@@ -19,6 +19,7 @@ CLEMENTINE = "org.mpris.clementine"
 MEDIAPLAYER = "org.freedesktop.MediaPlayer"
 LAST_FM_KEY = "83dcb2276022c922b0140f4fde7425ec"
 IMG_CACHE_DIR = os.path.expanduser("~/.config/Clementine/albumcovers/")
+RETRY_TIMEOUT = 3000
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
@@ -85,6 +86,11 @@ class Clementine(plasmascript.Applet):
             self.retry.setIcon(KIcon('view-refresh'))
             QObject.connect(self.retry, SIGNAL("clicked()"), self._retry_clicked)
             self.layout.addItem(self.retry)
+
+            # retry timer
+            self.retry_timer = QTimer()
+            QObject.connect(self.retry_timer, SIGNAL("timeout()"), self._retry_clicked)
+            self.retry_timer.start(RETRY_TIMEOUT)
 
             # no clementine running; no plasma app for you
             return
