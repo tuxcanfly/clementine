@@ -1,0 +1,15 @@
+0.9
+** Added auto retry timer
+
+0.8:
+** Sanitized missing metadata
+** Refactored a bit
+
+0.7:
+** Fixed script intialization issues due to missing metadata
+
+0.6:
+** App no longer crashes when clementine is not running.
+
+** Added cached cover art from clementine.
+** Added Play/Pause/Prev/Next/Stop action buttons
